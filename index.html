@@ -752,27 +752,46 @@ function render() {
 
 function renderCards() {
   const grid = document.getElementById('memberGrid');
-  grid.innerHTML = '';
 
   MEMBERS.forEach(m => {
     const isChecked = !!state[currentMeal][m.id];
-    const card = document.createElement('div');
-    card.className = `member-card${isChecked ? ' checked-' + currentMeal : ''}`;
-    card.onclick = () => toggleMember(m.id);
-
     const lunchBadge  = state.lunch[m.id]  ? `<span class="meal-badge badge-lunch">점심 ✓</span>`  : '';
     const dinnerBadge = state.dinner[m.id] ? `<span class="meal-badge badge-dinner">저녁 ✓</span>` : '';
 
-    card.innerHTML = `
-      <div class="member-top">
-        <div class="member-avatar" style="background:${m.color}22; color:${m.color}">${m.emoji}</div>
-        <div class="member-check">${isChecked ? '✓' : ''}</div>
-      </div>
-      <div class="member-name">${m.name}</div>
-      <div class="member-role">${m.role}</div>
-      <div class="member-meal-badges">${lunchBadge}${dinnerBadge}</div>
-    `;
-    grid.appendChild(card);
+    let card = document.getElementById(`card-${m.id}`);
+
+    if (!card) {
+      // 카드가 없으면 새로 생성
+      card = document.createElement('div');
+      card.id = `card-${m.id}`;
+      card.className = `member-card${isChecked ? ' checked-' + currentMeal : ''}`;
+      card.onclick = () => toggleMember(m.id);
+      card.innerHTML = `
+        <div class="member-top">
+          <div class="member-avatar" style="background:${m.color}22; color:${m.color}">${m.emoji}</div>
+          <div class="member-check">${isChecked ? '✓' : ''}</div>
+        </div>
+        <div class="member-name">${m.name}</div>
+        <div class="member-role">${m.role}</div>
+        <div class="member-meal-badges">${lunchBadge}${dinnerBadge}</div>
+      `;
+      grid.appendChild(card);
+    } else {
+      // 카드가 있으면 변경된 부분만 업데이트
+      const newClass = `member-card${isChecked ? ' checked-' + currentMeal : ''}`;
+      if (card.className !== newClass) card.className = newClass;
+
+      const checkEl = card.querySelector('.member-check');
+      if (checkEl && checkEl.textContent !== (isChecked ? '✓' : '')) {
+        checkEl.textContent = isChecked ? '✓' : '';
+      }
+
+      const badgeEl = card.querySelector('.member-meal-badges');
+      const newBadges = lunchBadge + dinnerBadge;
+      if (badgeEl && badgeEl.innerHTML !== newBadges) {
+        badgeEl.innerHTML = newBadges;
+      }
+    }
   });
 
   const titles = { lunch: '☀️ 점심 참여 체크', dinner: '🌙 저녁 참여 체크' };
@@ -924,7 +943,7 @@ render();
 // 구글 시트에서 체크 현황 로드 + 10초마다 자동 폴링
 setSyncing(true);
 fetchData();
-setInterval(fetchData, 10000);
+setInterval(fetchData, 3000);
 </script>
 </body>
 </html>
