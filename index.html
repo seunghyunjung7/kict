@@ -732,10 +732,8 @@ async function fetchData() {
 
 async function postUpdate(name, lunch, dinner) {
   try {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'update', name, lunch, dinner }),
-    });
+    const params = new URLSearchParams({ action: 'update', name, lunch, dinner });
+    await fetch(`${API_URL}?${params.toString()}`);
   } catch(e) {
     showToast('⚠️ 저장 실패. 네트워크를 확인해주세요.');
   }
