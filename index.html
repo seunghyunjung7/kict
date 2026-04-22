@@ -714,13 +714,20 @@ async function fetchData() {
     const res = await fetch(`${API_URL}?action=get&t=${Date.now()}`);
     const json = await res.json();
     if (json.success) {
-      state = { lunch: {}, dinner: {} };
+      const newLunch = {}, newDinner = {};
       Object.entries(json.data).forEach(([name, val]) => {
         const m = MEMBERS.find(x => x.name === name);
         if (!m) return;
-        if (val.lunch  === true || val.lunch  === 'TRUE')  state.lunch[m.id]  = true;
-        if (val.dinner === true || val.dinner === 'TRUE') state.dinner[m.id] = true;
+        if (val.lunch)  newLunch[m.id]  = true;
+        if (val.dinner) newDinner[m.id] = true;
       });
+
+      // 시트에 아무도 체크 안 되어있으면 현재 화면 상태 유지
+      const hasAnyData = Object.keys(newLunch).length > 0 || Object.keys(newDinner).length > 0;
+      if (hasAnyData) {
+        state = { lunch: newLunch, dinner: newDinner };
+      }
+
       setSyncing(false);
       render();
     }
