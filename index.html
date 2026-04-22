@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>팀 식사 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e2230;
+    --border: #2a2f3d;
+    --accent-lunch: #f59e0b;
+    --accent-dinner: #6366f1;
+    --accent-both: #10b981;
+    --accent-skip: #374151;
+    --text: #f1f5f9;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --glow-lunch: rgba(245,158,11,0.15);
+    --glow-dinner: rgba(99,102,241,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BACKGROUND GRID */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .header-left h1 {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+  .header-left h1 span {
+    color: var(--accent-dinner);
+  }
+
+  .header-left .subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .date-display {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+  }
+
+  /* MEAL TABS */
+  .meal-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .tab-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tab-btn .tab-icon { font-size: 16px; }
+  .tab-btn .tab-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    background: var(--surface2);
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .tab-btn.active-lunch {
+    background: var(--glow-lunch);
+    border-color: var(--accent-lunch);
+    color: var(--accent-lunch);
+  }
+  .tab-btn.active-lunch .tab-count { background: rgba(245,158,11,0.2); color: var(--accent-lunch); }
+
+  .tab-btn.active-dinner {
+    background: var(--glow-dinner);
+    border-color: var(--accent-dinner);
+    color: var(--accent-dinner);
+  }
+  .tab-btn.active-dinner .tab-count { background: rgba(99,102,241,0.2); color: var(--accent-dinner); }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.2s;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .stat-info .label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+  }
+  .stat-info .value {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    line-height: 1;
+  }
+  .stat-info .sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* PROGRESS BAR */
+  .progress-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .progress-header .label {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .progress-header .pct {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .progress-track {
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+    display: flex;
+    gap: 2px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* MEMBER GRID */
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .member-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .member-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: transparent;
+    transition: background 0.2s;
+  }
+
+  .member-card:hover {
+    border-color: #3a4050;
+    transform: translateY(-1px);
+  }
+
+  .member-card.checked-lunch::before { background: var(--accent-lunch); }
+  .member-card.checked-dinner::before { background: var(--accent-dinner); }
+  .member-card.checked-lunch { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.04); }
+  .member-card.checked-dinner { border-color: rgba(99,102,241,0.35); background: rgba(99,102,241,0.04); }
+
+  .member-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .member-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s;
+    background: var(--surface2);
+  }
+
+  .member-card.checked-lunch .member-check {
+    background: var(--accent-lunch);
+    border-color: var(--accent-lunch);
+    color: #000;
+  }
+  .member-card.checked-dinner .member-check {
+    background: var(--accent-dinner);
+    border-color: var(--accent-dinner);
+    color: #fff;
+  }
+
+  .member-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .member-role {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .member-meal-badges {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .meal-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .badge-lunch { background: rgba(245,158,11,0.15); color: var(--accent-lunch); }
+  .badge-dinner { background: rgba(99,102,241,0.15); color: #818cf8; }
+
+  /* SUMMARY BOTTOM */
+  .summary-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .summary-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .summary-row:last-child { border-bottom: none; }
+
+  .summary-row .meal-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .summary-names {
+    font-size: 12px;
+    color: var(--text-muted);
+    max-width: 600px;
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  .summary-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    margin-left: 24px;
+    flex-shrink: 0;
+  }
+
+  /* COPY BUTTON */
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s;
+    margin-top: 16px;
+  }
+  .copy-btn:hover {
+    background: var(--surface);
+    border-color: var(--accent-dinner);
+    color: var(--accent-dinner);
+  }
+  .copy-btn.copied {
+    border-color: var(--accent-both);
+    color: var(--accent-both);
+  }
+
+  /* QUICK ALL BTN */
+  .quick-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .quick-btn {
+    padding: 7px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .quick-btn:hover { border-color: #3a4050; color: var(--text); }
+  .quick-btn.lunch-quick:hover { border-color: var(--accent-lunch); color: var(--accent-lunch); }
+  .quick-btn.dinner-quick:hover { border-color: var(--accent-dinner); color: var(--accent-dinner); }
+
+  /* NOTIFICATION TOAST */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .member-card {
+    animation: fadeInUp 0.4s ease both;
+  }
+
+  .member-card:nth-child(1)  { animation-delay: 0.02s; }
+  .member-card:nth-child(2)  { animation-delay: 0.04s; }
+  .member-card:nth-child(3)  { animation-delay: 0.06s; }
+  .member-card:nth-child(4)  { animation-delay: 0.08s; }
+  .member-card:nth-child(5)  { animation-delay: 0.10s; }
+  .member-card:nth-child(6)  { animation-delay: 0.12s; }
+  .member-card:nth-child(7)  { animation-delay: 0.14s; }
+  .member-card:nth-child(8)  { animation-delay: 0.16s; }
+  .member-card:nth-child(9)  { animation-delay: 0.18s; }
+  .member-card:nth-child(10) { animation-delay: 0.20s; }
+  .member-card:nth-child(11) { animation-delay: 0.22s; }
+  .member-card:nth-child(12) { animation-delay: 0.24s; }
+  .member-card:nth-child(13) { animation-delay: 0.26s; }
+  .member-card:nth-child(14) { animation-delay: 0.28s; }
+  .member-card:nth-child(15) { animation-delay: 0.30s; }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    .member-grid { grid-template-columns: repeat(2, 1fr); }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    header { flex-direction: column; }
+    .header-right { align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <h1>🍽 팀 <span>식사</span> 대시보드</h1>
+      <div class="subtitle" id="dateDisplay"></div>
+    </div>
+    <div class="header-right">
+      <div class="date-display" id="timeDisplay"></div>
+      <div id="syncIndicator" style="font-size:12px; color:var(--text-muted); font-family:'Space Mono',monospace;">⏳ 로딩 중...</div>
+      <button class="reset-btn" onclick="resetAll()">🔄 오늘 초기화</button>
+    </div>
+  </header>
+
+  <!-- MEAL TABS -->
+  <div class="meal-tabs">
+    <button class="tab-btn active-lunch" id="tab-lunch" onclick="switchMeal('lunch')">
+      <span class="tab-icon">☀️</span> 점심
+      <span class="tab-count" id="lunch-count">0</span>
+    </button>
+    <button class="tab-btn" id="tab-dinner" onclick="switchMeal('dinner')">
+      <span class="tab-icon">🌙</span> 저녁
+      <span class="tab-count" id="dinner-count">0</span>
+    </button>
+  </div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(245,158,11,0.1)">☀️</div>
+      <div class="stat-info">
+        <div class="label">점심 참여</div>
+        <div class="value" id="stat-lunch" style="color:var(--accent-lunch)">0</div>
+        <div class="sub">명 참석</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(99,102,241,0.1)">🌙</div>
+      <div class="stat-info">
+        <div class="label">저녁 참여</div>
+        <div class="value" id="stat-dinner" style="color:var(--accent-dinner)">0</div>
+        <div class="sub">명 참석</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(16,185,129,0.1)">👥</div>
+      <div class="stat-info">
+        <div class="label">전체 팀원</div>
+        <div class="value" style="color:var(--accent-both)">15</div>
+        <div class="sub">명 총원</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(99,102,241,0.08)">✅</div>
+      <div class="stat-info">
+        <div class="label">응답 완료</div>
+        <div class="value" id="stat-responded" style="color:var(--text)">0</div>
+        <div class="sub">명 응답</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  <div class="progress-section">
+    <div class="progress-header">
+      <span class="label">☀️ 점심 참여율</span>
+      <span class="pct" id="lunch-pct">0 / 16</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="lunch-bar" style="background:var(--accent-lunch); width:0%"></div>
+    </div>
+    <div class="progress-header" style="margin-top:14px">
+      <span class="label">🌙 저녁 참여율</span>
+      <span class="pct" id="dinner-pct">0 / 16</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="dinner-bar" style="background:var(--accent-dinner); width:0%"></div>
+    </div>
+  </div>
+
+  <!-- MEMBER GRID -->
+  <div class="section-title" id="grid-title">☀️ 점심 참여 체크</div>
+
+  <div class="quick-actions">
+    <button class="quick-btn lunch-quick" id="all-btn" onclick="toggleAll()">✓ 전체 선택</button>
+    <button class="quick-btn" onclick="clearCurrent()">✕ 현재 탭 초기화</button>
+  </div>
+
+  <div class="member-grid" id="memberGrid"></div>
+
+  <!-- SUMMARY -->
+  <div class="summary-section">
+    <div class="summary-title">📋 오늘 식사 현황 요약</div>
+
+    <div class="summary-row">
+      <div class="meal-label">
+        <div class="dot" style="background:var(--accent-lunch)"></div>
+        점심 참여
+      </div>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div class="summary-names" id="lunch-names">—</div>
+        <div class="summary-count" style="color:var(--accent-lunch)" id="sum-lunch">0명</div>
+      </div>
+    </div>
+
+    <div class="summary-row">
+      <div class="meal-label">
+        <div class="dot" style="background:var(--accent-dinner)"></div>
+        저녁 참여
+      </div>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div class="summary-names" id="dinner-names">—</div>
+        <div class="summary-count" style="color:var(--accent-dinner)" id="sum-dinner">0명</div>
+      </div>
+    </div>
+
+    <div class="summary-row">
+      <div class="meal-label">
+        <div class="dot" style="background:var(--text-muted)"></div>
+        미응답
+      </div>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div class="summary-names" id="no-response-names">전체 팀원</div>
+        <div class="summary-count" style="color:var(--text-muted)" id="sum-skip">15명</div>
+      </div>
+    </div>
+
+    <button class="copy-btn" id="copyBtn" onclick="copyToClipboard()">
+      📋 채팅에 공유할 텍스트 복사
+    </button>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const MEMBERS = [
+  { id: 1,  name: '김성식', role: '선임연구위원',   emoji: '👨‍🔬', color: '#6366f1' },
+  { id: 2,  name: '정승현', role: '연구위원',       emoji: '👨‍💼', color: '#3b82f6' },
+  { id: 3,  name: '손민수', role: '연구위원',       emoji: '👨‍🏫', color: '#06b6d4' },
+  { id: 4,  name: '김두식', role: '수석연구원',     emoji: '👨‍💻', color: '#10b981' },
+  { id: 5,  name: '김효민', role: '수석연구원',     emoji: '👨‍🔭', color: '#84cc16' },
+  { id: 6,  name: '김민주', role: '수석연구원',     emoji: '👩‍🔬', color: '#f59e0b' },
+  { id: 7,  name: '제민희', role: '전임연구원',     emoji: '👩‍💼', color: '#f97316' },
+  { id: 8,  name: '김민서', role: '박사후연구원',   emoji: '👩‍🎓', color: '#ec4899' },
+  { id: 9,  name: '황희수', role: '박사후연구원',   emoji: '👨‍🎓', color: '#a855f7' },
+  { id: 10, name: '장새움', role: '박사후연구원',   emoji: '👩‍🔭', color: '#d946ef' },
+  { id: 11, name: '이지연', role: '박사후연구원',   emoji: '👩‍💻', color: '#ef4444' },
+  { id: 12, name: '조준영', role: '석사후연구원',   emoji: '👨‍🎓', color: '#22d3ee' },
+  { id: 13, name: '하나',   role: '학생연구원',     emoji: '🧑‍🎓', color: '#14b8a6' },
+  { id: 14, name: '최보경', role: '학생연구원',     emoji: '👩‍🎓', color: '#fb923c' },
+  { id: 15, name: '룰루',   role: '학생연구원',     emoji: '🧑‍🔬', color: '#8b5cf6' },
+];
+
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const API_URL = 'https://script.google.com/macros/s/AKfycbxLbRrERNQCj4yQ2clppjIguxUI4QoE2YxQC_t5Bq06JJnPYOvuJQTWb1hs1zAS4RGL/exec';
+const TOTAL = 15;
+
+let currentMeal = 'lunch';
+let state = { lunch: {}, dinner: {} };
+let isSyncing = false;
+
+// ─── API ─────────────────────────────────────────────────────────────────────
+async function fetchData() {
+  try {
+    const res = await fetch(`${API_URL}?action=get&t=${Date.now()}`);
+    const json = await res.json();
+    if (json.success) {
+      state = { lunch: {}, dinner: {} };
+      Object.entries(json.data).forEach(([name, val]) => {
+        const m = MEMBERS.find(x => x.name === name);
+        if (!m) return;
+        if (val.lunch  === true || val.lunch  === 'TRUE')  state.lunch[m.id]  = true;
+        if (val.dinner === true || val.dinner === 'TRUE') state.dinner[m.id] = true;
+      });
+      setSyncing(false);
+      render();
+    }
+  } catch(e) {
+    showToast('⚠️ 데이터 로드 실패. 재시도 중...');
+    setSyncing(false);
+  }
+}
+
+async function postUpdate(name, lunch, dinner) {
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'update', name, lunch, dinner }),
+    });
+  } catch(e) {
+    showToast('⚠️ 저장 실패. 네트워크를 확인해주세요.');
+  }
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  renderCards();
+  updateStats();
+  updateSummary();
+  updateTabCounts();
+  updateProgress();
+  updateTabStyles();
+}
+
+function renderCards() {
+  const grid = document.getElementById('memberGrid');
+  grid.innerHTML = '';
+
+  MEMBERS.forEach(m => {
+    const isChecked = !!state[currentMeal][m.id];
+    const card = document.createElement('div');
+    card.className = `member-card${isChecked ? ' checked-' + currentMeal : ''}`;
+    card.onclick = () => toggleMember(m.id);
+
+    const lunchBadge  = state.lunch[m.id]  ? `<span class="meal-badge badge-lunch">점심 ✓</span>`  : '';
+    const dinnerBadge = state.dinner[m.id] ? `<span class="meal-badge badge-dinner">저녁 ✓</span>` : '';
+
+    card.innerHTML = `
+      <div class="member-top">
+        <div class="member-avatar" style="background:${m.color}22; color:${m.color}">${m.emoji}</div>
+        <div class="member-check">${isChecked ? '✓' : ''}</div>
+      </div>
+      <div class="member-name">${m.name}</div>
+      <div class="member-role">${m.role}</div>
+      <div class="member-meal-badges">${lunchBadge}${dinnerBadge}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  const titles = { lunch: '☀️ 점심 참여 체크', dinner: '🌙 저녁 참여 체크' };
+  document.getElementById('grid-title').textContent = titles[currentMeal];
+
+  const allChecked = MEMBERS.every(m => state[currentMeal][m.id]);
+  document.getElementById('all-btn').textContent = allChecked ? '✕ 전체 해제' : '✓ 전체 선택';
+}
+
+function updateStats() {
+  const lc = Object.values(state.lunch).filter(Boolean).length;
+  const dc = Object.values(state.dinner).filter(Boolean).length;
+  const responded = MEMBERS.filter(m => state.lunch[m.id] || state.dinner[m.id]).length;
+  document.getElementById('stat-lunch').textContent = lc;
+  document.getElementById('stat-dinner').textContent = dc;
+  document.getElementById('stat-responded').textContent = responded;
+}
+
+function updateTabCounts() {
+  document.getElementById('lunch-count').textContent  = Object.values(state.lunch).filter(Boolean).length;
+  document.getElementById('dinner-count').textContent = Object.values(state.dinner).filter(Boolean).length;
+}
+
+function updateProgress() {
+  const lc = Object.values(state.lunch).filter(Boolean).length;
+  const dc = Object.values(state.dinner).filter(Boolean).length;
+  document.getElementById('lunch-bar').style.width  = (lc / TOTAL * 100) + '%';
+  document.getElementById('dinner-bar').style.width = (dc / TOTAL * 100) + '%';
+  document.getElementById('lunch-pct').textContent  = `${lc} / ${TOTAL}`;
+  document.getElementById('dinner-pct').textContent = `${dc} / ${TOTAL}`;
+}
+
+function updateSummary() {
+  const lunchPeople  = MEMBERS.filter(m => state.lunch[m.id]).map(m => m.name);
+  const dinnerPeople = MEMBERS.filter(m => state.dinner[m.id]).map(m => m.name);
+  const noResponse   = MEMBERS.filter(m => !state.lunch[m.id] && !state.dinner[m.id]).map(m => m.name);
+
+  document.getElementById('lunch-names').textContent       = lunchPeople.length  ? lunchPeople.join(', ')  : '—';
+  document.getElementById('dinner-names').textContent      = dinnerPeople.length ? dinnerPeople.join(', ') : '—';
+  document.getElementById('no-response-names').textContent = noResponse.length   ? noResponse.join(', ')   : '모두 응답 완료 ✓';
+
+  document.getElementById('sum-lunch').textContent  = lunchPeople.length  + '명';
+  document.getElementById('sum-dinner').textContent = dinnerPeople.length + '명';
+  document.getElementById('sum-skip').textContent   = noResponse.length   + '명';
+}
+
+function updateTabStyles() {
+  ['lunch','dinner'].forEach(meal => {
+    document.getElementById(`tab-${meal}`).className =
+      'tab-btn' + (meal === currentMeal ? ` active-${meal}` : '');
+  });
+}
+
+// ─── SYNC STATUS ─────────────────────────────────────────────────────────────
+function setSyncing(v) {
+  isSyncing = v;
+  const indicator = document.getElementById('syncIndicator');
+  indicator.textContent = v ? '🔄 저장 중...' : '✅ 동기화됨';
+  indicator.style.color = v ? 'var(--text-muted)' : 'var(--accent-both)';
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────────────────────
+async function toggleMember(id) {
+  const m = MEMBERS.find(x => x.id === id);
+  state[currentMeal][id] = !state[currentMeal][id];
+  if (!state[currentMeal][id]) delete state[currentMeal][id];
+  render();
+  setSyncing(true);
+  await postUpdate(m.name, !!state.lunch[id], !!state.dinner[id]);
+  setSyncing(false);
+}
+
+function switchMeal(meal) {
+  currentMeal = meal;
+  render();
+}
+
+async function toggleAll() {
+  const allChecked = MEMBERS.every(m => state[currentMeal][m.id]);
+  if (allChecked) {
+    MEMBERS.forEach(m => delete state[currentMeal][m.id]);
+  } else {
+    MEMBERS.forEach(m => { state[currentMeal][m.id] = true; });
+  }
+  render();
+  setSyncing(true);
+  await Promise.all(MEMBERS.map(m => postUpdate(m.name, !!state.lunch[m.id], !!state.dinner[m.id])));
+  setSyncing(false);
+}
+
+async function clearCurrent() {
+  state[currentMeal] = {};
+  render();
+  setSyncing(true);
+  await Promise.all(MEMBERS.map(m => postUpdate(m.name, !!state.lunch[m.id], !!state.dinner[m.id])));
+  setSyncing(false);
+  showToast(`${currentMeal === 'lunch' ? '점심' : '저녁'} 체크가 초기화되었습니다.`);
+}
+
+async function resetAll() {
+  if (!confirm('오늘 모든 식사 체크를 초기화할까요?')) return;
+  state = { lunch: {}, dinner: {} };
+  render();
+  setSyncing(true);
+  await Promise.all(MEMBERS.map(m => postUpdate(m.name, false, false)));
+  setSyncing(false);
+  showToast('전체 초기화 완료!');
+}
+
+function copyToClipboard() {
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
+  const lunchPeople  = MEMBERS.filter(m => state.lunch[m.id]).map(m => m.name);
+  const dinnerPeople = MEMBERS.filter(m => state.dinner[m.id]).map(m => m.name);
+  const text = `📅 ${dateStr} 팀 식사 현황\n\n☀️ 점심 (${lunchPeople.length}명)\n${lunchPeople.length ? lunchPeople.join(', ') : '없음'}\n\n🌙 저녁 (${dinnerPeople.length}명)\n${dinnerPeople.length ? dinnerPeople.join(', ') : '없음'}\n\n총 ${TOTAL}명 기준`;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.classList.add('copied');
+    btn.textContent = '✅ 복사 완료!';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '📋 채팅에 공유할 텍스트 복사'; }, 2000);
+    showToast('클립보드에 복사되었습니다!');
+  });
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ─── CLOCK ───────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('dateDisplay').textContent =
+    `${now.getFullYear()}. ${now.getMonth()+1}. ${now.getDate()} (${days[now.getDay()]})`;
+  document.getElementById('timeDisplay').textContent =
+    now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+updateClock();
+setInterval(updateClock, 1000);
+
+// 명단 즉시 렌더 (API 응답 전에도 사람 이름 보이게)
+render();
+
+// 구글 시트에서 체크 현황 로드 + 10초마다 자동 폴링
+setSyncing(true);
+fetchData();
+setInterval(fetchData, 10000);
+</script>
+</body>
+</html>
